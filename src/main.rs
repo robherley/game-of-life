@@ -67,6 +67,10 @@ async fn render(
     }
 
     let mut headers: HeaderMap<HeaderValue> = HeaderMap::new();
+    headers.insert(
+        header::CACHE_CONTROL,
+        HeaderValue::from_static("no-cache, no-store"),
+    );
     headers.insert("x-life-generation", HeaderValue::from(board.generation));
     headers.insert("x-life-delta", HeaderValue::from(board.delta));
 
