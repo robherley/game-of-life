@@ -71,6 +71,11 @@ async fn render(
         header::CACHE_CONTROL,
         HeaderValue::from_static("no-cache, no-store"),
     );
+    headers.insert(
+        header::EXPIRES,
+        HeaderValue::from_static("Thu, 01 Jan 1970 00:00:00 GMT"),
+    );
+    headers.insert(header::ETAG, HeaderValue::from(board.generation));
     headers.insert("x-life-generation", HeaderValue::from(board.generation));
     headers.insert("x-life-delta", HeaderValue::from(board.delta));
 
@@ -117,8 +122,11 @@ async fn creator(
     params: Query<CreatorParams>,
     body: String,
 ) -> impl IntoResponse {
-    if !game.chars().all(|c| c.is_alphanumeric()) {
-        fail!(StatusCode::BAD_REQUEST, "game name must be alphanumeric");
+    if !game.chars().all(|c| c.is_alphanumeric() || c == '-') {
+        fail!(
+            StatusCode::BAD_REQUEST,
+            "game name must be alphanumeric or '-'"
+        );
     }
 
     let board = match Board::from_string(body, params.0.into()) {
