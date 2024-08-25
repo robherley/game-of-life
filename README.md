@@ -1,6 +1,6 @@
 # game-of-life
 
-Introducing GoLaaS: <u>**G**</u>ame <u>**o**</u>f <u>**L**</u>ife <u>**a**</u>s <u>**a**</u> <u>**S**</u>ervice
+Introducing GoLaaS: **G**ame **o**f **L**ife **a**s **a** **S**ervice
 
 - [game-of-life](#game-of-life)
   - [Formats](#formats)
@@ -84,7 +84,7 @@ you@local:~$ curl 'https://game-of-life.reb.gg/fig8.txt?alive=%E2%AC%9C&dead=%E2
 ⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛
 ⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛
 ⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛
-⬛⬛⬛⬛⬛⬛⬜⬜⬜⬛⬛⬛
+⬛⬛⬛⬛⬛⬛⬜⬜⬜⬛⬛⬛👾
 ⬛⬛⬛⬛⬛⬛⬜⬜⬜⬛⬛⬛
 ⬛⬛⬛⬛⬛⬛⬜⬜⬜⬛⬛⬛
 ⬛⬛⬛⬜⬜⬜⬛⬛⬛⬛⬛⬛
