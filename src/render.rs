@@ -1,4 +1,4 @@
-use crate::game::Board;
+use crate::game::Game;
 use quick_xml::{
     events::{BytesEnd, BytesStart, BytesText, Event},
     writer::Writer,
@@ -26,7 +26,8 @@ impl Default for TextOptions {
     }
 }
 
-pub fn text(board: &Board, opts: TextOptions) -> String {
+pub fn text(game: &Game, opts: TextOptions) -> String {
+    let board = &game.board;
     let mut result = String::with_capacity(board.rows() * board.cols() + board.rows());
 
     for (i, row) in board.grid.iter().enumerate() {
@@ -70,7 +71,8 @@ impl Default for SVGOptions {
     }
 }
 
-pub fn svg(board: &Board, opts: SVGOptions) -> Result<String, quick_xml::Error> {
+pub fn svg(game: &Game, opts: SVGOptions) -> Result<String, quick_xml::Error> {
+    let board = &game.board;
     let width = board.cols() * opts.cell_size;
     let height = board.rows() * opts.cell_size + 20;
 
@@ -109,7 +111,7 @@ pub fn svg(board: &Board, opts: SVGOptions) -> Result<String, quick_xml::Error> 
     ])))?;
     w.write_event(Event::Text(BytesText::new(&*format!(
         "t = {}, Δ = {}",
-        board.generation, board.delta
+        game.generation, game.delta
     ))))?;
     w.write_event(Event::End(BytesEnd::new("text")))?;
 

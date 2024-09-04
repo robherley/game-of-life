@@ -7,7 +7,7 @@ use axum::{
 };
 use game_of_life::{
     db::{self, StoreError},
-    game::Board,
+    game::{Board, Game},
     render::{self, SVGOptions, TextOptions},
 };
 use serde::Deserialize;
@@ -122,18 +122,19 @@ impl From<CreatorParams> for TextOptions {
 
 async fn creator(
     Extension(store): Extension<db::Store>,
-    Path(game): Path<String>,
+    Path(name): Path<String>,
     params: Query<CreatorParams>,
     body: String,
 ) -> impl IntoResponse {
-    if !game.chars().all(|c| c.is_alphanumeric() || c == '-') {
+    if !name.chars().all(|c| c.is_alphanumeric() || c == '-') {
         fail!(
             StatusCode::BAD_REQUEST,
             "game name must be alphanumeric or '-'"
         );
     }
 
-    let board = match Board::from_string(body, params.0.into()) {
+    let opts: TextOptions = params.0.into();
+    let board = match Board::from_seed(body, opts.alive, opts.dead, opts.separator) {
         Ok(b) => b,
         Err(e) => fail!(StatusCode::BAD_REQUEST, e),
     };
@@ -144,14 +145,15 @@ async fn creator(
         HeaderValue::from_static("*"),
     );
 
-    match store.create(&game, &board) {
+    let game = Game::from(board);
+    match store.create(&name, &game) {
         Ok(_) => (),
         Err(StoreError::SQLError(rusqlite::Error::SqliteFailure(e, _)))
             if e.code == rusqlite::ErrorCode::ConstraintViolation =>
         {
             fail!(
                 StatusCode::CONFLICT,
-                format!("game '{}' already exists", game)
+                format!("game '{}' already exists", name)
             );
         }
         Err(StoreError::BoardError(e)) => fail!(StatusCode::BAD_REQUEST, e),
@@ -161,7 +163,7 @@ async fn creator(
     (
         StatusCode::CREATED,
         headers,
-        render::text(&board, Default::default()),
+        render::text(&game, Default::default()),
     )
 }
 
@@ -190,8 +192,8 @@ async fn main() -> anyhow::Result<()> {
             "/favicon.ico",
             get(|| async { StatusCode::NOT_FOUND.into_response() }),
         )
-        .route("/:game", get(render))
-        .route("/:game", post(creator))
+        .route("/:name", get(render))
+        .route("/:name", post(creator))
         .layer(
             TraceLayer::new_for_http()
                 .make_span_with(trace::DefaultMakeSpan::new().level(Level::INFO))
