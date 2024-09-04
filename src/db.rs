@@ -1,7 +1,4 @@
-use crate::{
-    game::{Board, BoardError},
-    render::{self},
-};
+use crate::game::{Board, BoardError, Game};
 use r2d2::{Pool, PooledConnection};
 use r2d2_sqlite::SqliteConnectionManager;
 use rusqlite::params;
@@ -62,25 +59,25 @@ impl Store {
         Ok(self.pool.get()?)
     }
 
-    pub fn create(&self, name: &str, board: &Board) -> Result<(), StoreError> {
+    pub fn create(&self, name: &str, game: &Game) -> Result<(), StoreError> {
         let conn = self.conn()?;
         let mut stmt =
             conn.prepare("INSERT INTO games (name, board, generation, delta) VALUES (?, ?, ?, ?)")?;
-        let compressed = Self::compress(board.to_string())?;
-        stmt.execute(params![name, compressed, board.generation, board.delta])?;
+        let compressed = Self::compress(game.board.to_string())?;
+        stmt.execute(params![name, compressed, game.generation, game.delta])?;
         Ok(())
     }
 
-    pub fn update(&self, name: &str, board: &Board) -> Result<(), StoreError> {
+    pub fn update(&self, name: &str, game: &Game) -> Result<(), StoreError> {
         let conn = self.conn()?;
         let mut stmt =
             conn.prepare("UPDATE games SET board = ?, generation = ?, delta = ? WHERE name = ?")?;
-        let compressed = Self::compress(board.to_string())?;
-        stmt.execute(params![compressed, board.generation, board.delta, name])?;
+        let compressed = Self::compress(game.board.to_string())?;
+        stmt.execute(params![compressed, game.generation, game.delta, name])?;
         Ok(())
     }
 
-    pub fn find(&self, name: &str) -> Result<Option<Board>, StoreError> {
+    pub fn find(&self, name: &str) -> Result<Option<Game>, StoreError> {
         let conn = self.conn()?;
         let mut stmt = conn.prepare("SELECT board, generation, delta FROM games WHERE name = ?")?;
         let mut rows = stmt.query([name])?;
@@ -90,12 +87,13 @@ impl Store {
         };
         let grid: Vec<u8> = row.get(0)?;
         let seed = Self::decompress(&grid)?;
-        let mut board = Board::from_string(seed, render::TextOptions::default())
-            .map_err(|e| StoreError::BoardError(e))?;
-        board.generation = row.get(1)?;
-        board.delta = row.get(2)?;
+        let board = Board::try_from(seed).map_err(|e| StoreError::BoardError(e))?;
 
-        Ok(Some(board))
+        Ok(Some(Game {
+            board,
+            generation: row.get(1)?,
+            delta: row.get(2)?,
+        }))
     }
 
     fn compress(input: String) -> Result<Vec<u8>, StoreError> {

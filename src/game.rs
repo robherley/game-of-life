@@ -20,48 +20,104 @@ const NEIGHBORS: [(isize, isize); 8] = [
     (0, -1),  // W
 ];
 
-pub struct Board {
-    pub grid: Vec<Vec<bool>>,
+pub struct Game {
+    pub board: Board,
     pub generation: usize,
     pub delta: usize,
 }
 
-impl From<Vec<Vec<bool>>> for Board {
-    fn from(grid: Vec<Vec<bool>>) -> Self {
-        Board {
-            grid,
+impl From<Board> for Game {
+    fn from(board: Board) -> Self {
+        Game {
+            board,
             generation: 0,
             delta: 0,
         }
     }
 }
 
+impl Game {
+    pub fn next(&mut self) {
+        self.delta = self.board.next() as usize;
+        self.generation += 1;
+    }
+
+    pub fn is_terminal(&self) -> bool {
+        self.generation != 0 && self.delta == 0
+    }
+}
+
+impl std::fmt::Debug for Game {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "[n: {}, Δ: {}] \n", self.generation, self.delta,)?;
+        write!(f, "{}", render::text(&self, render::TextOptions::default()))
+    }
+}
+
+pub struct Board {
+    pub grid: Vec<Vec<bool>>,
+}
+
+impl TryFrom<String> for Board {
+    type Error = BoardError;
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        let opts = render::TextOptions::default();
+        Board::from_seed(value, opts.alive, opts.dead, opts.separator)
+    }
+}
+
+impl std::fmt::Display for Board {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let o = render::TextOptions::default();
+        write!(f, "{}", self.stringify(o.alive, o.dead, o.separator))
+    }
+}
+
 impl Board {
-    pub fn from_string(seed: String, opts: render::TextOptions) -> Result<Self, BoardError> {
-        if opts.separator == opts.alive || opts.separator == opts.dead {
-            return Err(BoardError::InvalidSeparator(opts.separator));
+    pub fn from_seed(
+        seed: String,
+        alive: char,
+        dead: char,
+        separator: char,
+    ) -> Result<Self, BoardError> {
+        if separator == alive || separator == dead {
+            return Err(BoardError::InvalidSeparator(separator));
         }
 
-        let seeds = seed.trim().split(opts.separator).collect::<Vec<&str>>();
+        let seeds = seed.trim().split(separator).collect::<Vec<&str>>();
         let cols = seeds.iter().map(|s| s.len()).max().unwrap_or(0);
 
         let mut grid = vec![vec![false; cols]; seeds.len()];
         for (row_idx, row_seed) in seeds.into_iter().enumerate() {
             for (col_idx, cell) in row_seed.char_indices() {
-                if cell == opts.alive {
+                if cell == alive {
                     grid[row_idx][col_idx] = true;
-                } else if cell != opts.dead {
-                    return Err(BoardError::InvalidSeedCharacter(
-                        cell, opts.alive, opts.dead,
-                    ));
+                } else if cell != dead {
+                    return Err(BoardError::InvalidSeedCharacter(cell, alive, dead));
                 }
             }
         }
 
-        Ok(Board::from(grid))
+        Ok(Board { grid })
     }
 
-    pub fn next(&mut self) {
+    pub fn stringify(&self, alive: char, dead: char, separator: char) -> String {
+        let mut result = String::with_capacity(self.rows() * self.cols() + self.rows());
+
+        for (i, row) in self.grid.iter().enumerate() {
+            for cell in row {
+                result.push(if *cell { alive } else { dead });
+            }
+            if i < self.rows() - 1 {
+                result.push(separator);
+            }
+        }
+
+        result
+    }
+
+    pub fn next(&mut self) -> i32 {
         let mut next = self.grid.clone();
         let mut delta = 0;
 
@@ -76,8 +132,7 @@ impl Board {
         }
 
         self.grid = next;
-        self.delta = delta;
-        self.generation += 1;
+        delta
     }
 
     pub fn rows(&self) -> usize {
@@ -86,10 +141,6 @@ impl Board {
 
     pub fn cols(&self) -> usize {
         self.grid[0].len()
-    }
-
-    pub fn terminal(&self) -> bool {
-        self.generation != 0 && self.delta == 0
     }
 
     fn safe_get(&self, row: isize, col: isize) -> bool {
@@ -129,18 +180,5 @@ impl Board {
             .iter()
             .filter(|(r, c)| self.safe_get(row as isize + r, col as isize + c))
             .count()
-    }
-}
-
-impl std::fmt::Display for Board {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", render::text(&self, render::TextOptions::default()))
-    }
-}
-
-impl std::fmt::Debug for Board {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "[n: {}, Δ: {}] \n", self.generation, self.delta,)?;
-        write!(f, "{}", render::text(&self, render::TextOptions::default()))
     }
 }
