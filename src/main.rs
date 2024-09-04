@@ -78,6 +78,10 @@ async fn render(
     headers.insert(header::ETAG, HeaderValue::from(board.generation));
     headers.insert("x-life-generation", HeaderValue::from(board.generation));
     headers.insert("x-life-delta", HeaderValue::from(board.delta));
+    headers.insert(
+        header::ACCESS_CONTROL_ALLOW_ORIGIN,
+        HeaderValue::from_static("*"),
+    );
 
     match ext {
         "svg" => {
@@ -134,6 +138,12 @@ async fn creator(
         Err(e) => fail!(StatusCode::BAD_REQUEST, e),
     };
 
+    let mut headers: HeaderMap<HeaderValue> = HeaderMap::new();
+    headers.insert(
+        header::ACCESS_CONTROL_ALLOW_ORIGIN,
+        HeaderValue::from_static("*"),
+    );
+
     match store.create(&game, &board) {
         Ok(_) => (),
         Err(StoreError::SQLError(rusqlite::Error::SqliteFailure(e, _)))
@@ -150,7 +160,7 @@ async fn creator(
 
     (
         StatusCode::CREATED,
-        HeaderMap::new(),
+        headers,
         render::text(&board, Default::default()),
     )
 }
