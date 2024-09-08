@@ -1,6 +1,0 @@
-#!/bin/sh
-
-DB_PATH=tmp/game-of-life.db
-
-mkdir -p "$(dirname $DB_PATH)" && touch $DB_PATH
-sqlite3 $DB_PATH

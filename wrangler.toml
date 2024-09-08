@@ -1,0 +1,14 @@
+name = "game-of-life"
+main = "build/worker/shim.mjs"
+compatibility_date = "2024-09-04"
+
+[build]
+command = "cargo install -q worker-build && worker-build --release"
+
+[[routes]]
+pattern = "game-of-life.reb.gg"
+custom_domain = true
+
+[[kv_namespaces]]
+binding = "games"
+id = "5249580f53804e719dac2390f9bc2610"

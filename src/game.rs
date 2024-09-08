@@ -1,4 +1,4 @@
-use crate::render::{self};
+use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 #[derive(Debug, Error, PartialEq, Eq)]
@@ -8,6 +8,10 @@ pub enum BoardError {
     #[error("invalid seed character: '{0}', expected '{1}' or '{2}'")]
     InvalidSeedCharacter(char, char, char),
 }
+
+pub const ALIVE: char = '#';
+pub const DEAD: char = '.';
+pub const SEPARATOR: char = '\n';
 
 const NEIGHBORS: [(isize, isize); 8] = [
     (-1, -1), // NW
@@ -20,6 +24,7 @@ const NEIGHBORS: [(isize, isize); 8] = [
     (0, -1),  // W
 ];
 
+#[derive(Serialize, Deserialize)]
 pub struct Game {
     pub board: Board,
     pub generation: usize,
@@ -50,10 +55,11 @@ impl Game {
 impl std::fmt::Debug for Game {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "[n: {}, Δ: {}] \n", self.generation, self.delta,)?;
-        write!(f, "{}", render::text(&self, render::TextOptions::default()))
+        write!(f, "{}", self.board)
     }
 }
 
+#[derive(Serialize, Deserialize)]
 pub struct Board {
     pub grid: Vec<Vec<bool>>,
 }
@@ -62,25 +68,31 @@ impl TryFrom<String> for Board {
     type Error = BoardError;
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
-        let opts = render::TextOptions::default();
-        Board::from_seed(value, opts.alive, opts.dead, opts.separator)
+        Board::from_seed(value, None, None, None)
     }
 }
 
 impl std::fmt::Display for Board {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let o = render::TextOptions::default();
-        write!(f, "{}", self.stringify(o.alive, o.dead, o.separator))
+        write!(f, "{}", self.stringify(None, None, None))
     }
 }
 
 impl Board {
+    pub fn new(grid: Vec<Vec<bool>>) -> Self {
+        Board { grid }
+    }
+
     pub fn from_seed(
         seed: String,
-        alive: char,
-        dead: char,
-        separator: char,
+        alive: Option<char>,
+        dead: Option<char>,
+        separator: Option<char>,
     ) -> Result<Self, BoardError> {
+        let alive = alive.unwrap_or(ALIVE);
+        let dead = dead.unwrap_or(DEAD);
+        let separator = separator.unwrap_or(SEPARATOR);
+
         if separator == alive || separator == dead {
             return Err(BoardError::InvalidSeparator(separator));
         }
@@ -102,7 +114,16 @@ impl Board {
         Ok(Board { grid })
     }
 
-    pub fn stringify(&self, alive: char, dead: char, separator: char) -> String {
+    pub fn stringify(
+        &self,
+        alive: Option<char>,
+        dead: Option<char>,
+        separator: Option<char>,
+    ) -> String {
+        let alive = alive.unwrap_or(ALIVE);
+        let dead = dead.unwrap_or(DEAD);
+        let separator = separator.unwrap_or(SEPARATOR);
+
         let mut result = String::with_capacity(self.rows() * self.cols() + self.rows());
 
         for (i, row) in self.grid.iter().enumerate() {
