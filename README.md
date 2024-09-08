@@ -140,11 +140,11 @@ you@local:~$ curl -X POST --data-binary @examples/fig8 https://game-of-life.reb.
 
 > Q: How is state persisted?
 
-SQLite, the game "board" is compressed (with [ZSTD](https://github.com/facebook/zstd)) and stored as a blob.
+[CloudFlare Workers KV](https://developers.cloudflare.com/kv/) and serialized as a JSON blob.
 
 > Q: Where is it hosted?
 
-[Fly.io](https://fly.io)
+[Cloudflare Workers](https://workers.cloudflare.com/)
 
 > Q: Is it toroidal?
 

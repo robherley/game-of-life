@@ -1,9 +1,11 @@
-use crate::game::Game;
+use crate::game::{Game, ALIVE, DEAD, SEPARATOR};
 use quick_xml::{
     events::{BytesEnd, BytesStart, BytesText, Event},
     writer::Writer,
 };
+use serde::Deserialize;
 
+#[derive(Deserialize, Debug)]
 pub struct TextOptions {
     pub alive: char,
     pub dead: char,
@@ -13,9 +15,9 @@ pub struct TextOptions {
 impl TextOptions {
     pub fn new(alive: Option<char>, dead: Option<char>, separator: Option<char>) -> Self {
         Self {
-            alive: alive.unwrap_or('#'),
-            dead: dead.unwrap_or('.'),
-            separator: separator.unwrap_or('\n'),
+            alive: alive.unwrap_or(ALIVE),
+            dead: dead.unwrap_or(DEAD),
+            separator: separator.unwrap_or(SEPARATOR),
         }
     }
 }
